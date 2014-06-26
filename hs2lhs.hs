@@ -11,9 +11,9 @@ import qualified  Data.Text           as T
 import qualified  Data.Text.IO        as T
 import            System.Environment
 
-data Current = Comment | Code
+data Tag = Comment | Code
 
-lhsLine :: Current -> Text -> (Current, Text)
+lhsLine :: Tag -> Text -> (Tag, Text)
 lhsLine w t = fromMaybe d c
   where
     d = if | t == T.empty -> (Code, "") 
@@ -23,7 +23,7 @@ lhsLine w t = fromMaybe d c
     c = stripC "-- |" t <|> stripC "--"  t
     stripC p t = (\x -> (Comment, stripStart x)) <$> stripPrefix p t
 
-lhs :: Current -> [Text] -> [Text]
+lhs :: Tag -> [Text] -> [Text]
 lhs _ [] = []
 lhs c (t:ts) = t' : (lhs c' ts)
   where (c', t') = lhsLine c t
