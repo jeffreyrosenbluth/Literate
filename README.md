@@ -10,7 +10,7 @@ Usage:
 ```
 
 Converting hs to lhs requires making some fairly arbitrary decision about how to handle comments.
-hslhs makes any comment begininng with `--` (including haddock comments) into plain lhs text leaves
+hs2lhs makes any comment begininng with `--` (including haddock comments) into plain lhs text and leaves
 any other comments (includinge `{- ... -}`) embedded in the code.
-Of course there are many examples that wont convert as you expect, since coding styles vary. Consider
+Of course there are many examples that won't convert as you expect, since coding styles vary. Consider
 hs2lhs generated files as the first step in converting to literate haskell.
