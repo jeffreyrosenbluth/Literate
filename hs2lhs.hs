@@ -2,88 +2,41 @@
 
 module Main where
 
-import            Control.Monad.State
-import            Data.Maybe          (fromJust)
-import            Data.Text           (Text, isPrefixOf, stripStart, stripPrefix)
+import            Control.Applicative ((<$>), (<|>))
+import            Data.Maybe          (fromJust, fromMaybe)
+import            Data.Text           (Text, stripStart, stripPrefix)
 import qualified  Data.Text           as T
 import qualified  Data.Text.IO        as T
 import            System.Environment
 
-data WIP = Comment | Haddock | MComment | CHeader | Code
+data Current = Comment | Haddock | CHeader | Code
 
-type WIPState = State WIP [Text]
+stripPre pre w t = g <$> stripPrefix pre t
+  where g x = (w, stripStart x)
 
--- Warning partial function
-strip :: Text -> Text -> Text
-strip s = stripStart . fromJust . stripPrefix s
-
-toCode :: Text -> Text
-toCode s = T.append "> " s
-
-lhsLine :: WIP -> Text -> (WIP, Text)
+lhsLine :: Current -> Text -> (Current, Text)
 lhsLine w t = case w of
-  Haddock -> handleHaddock t
-  CHeader -> handleCHeader t
-  Comment -> handleComment t
-  Code    -> handleCode t
+    Code -> handleCode t 
+    _    -> handleComments w t
 
-handleMComment :: Text -> (WIP, Text)
-handleMComment s
-  | isPrefixOf "{-#" s  = (Code, T.cons 'n' (toCode s))
-  | isPrefixOf "---" s  = (Comment, s)
-  | isPrefixOf "-- |" s = (Haddock, strip "-- |" $ s)
-  | isPrefixOf "--" s   = (Comment, strip "--" $ s)
-  | s == T.empty        = (Code, "")
-  | otherwise           = (Code, T.cons '\n' (toCode s))
+handleCode :: Text -> (Current, Text)
+handleCode t = fromMaybe d c
+  where
+    c = stripPre "---" CHeader t <|> stripPre "-- |" Haddock t <|> stripPre "--" Comment t
+    d = if t == T.empty then (Code, "") else (Code, "> " `T.append` t)
 
-handleComment :: Text -> (WIP, Text)
-handleComment s
-  | isPrefixOf "{-#" s  = (Code, T.cons 'n' (toCode s))
-  | isPrefixOf "---" s  = (Comment, s)
-  | isPrefixOf "---" s  = (Comment, s)
-  | isPrefixOf "-- |" s = (Haddock, strip "-- |" $ s)
-  | isPrefixOf "--" s   = (Comment, strip "--" $ s)
-  | s == T.empty        = (Code, "")
-  | otherwise           = (Code, T.cons '\n' (toCode s))
+handleComments :: Current ->Text -> (Current, Text)
+handleComments w t = fromMaybe d c
+  where
+    c = stripPre "---" w t <|> stripPre "-- |" w t <|> stripPre "--" w t
+    d = if t == T.empty then (Code, "") else (Code, "\n> " `T.append` t)
 
-handleCode :: Text -> (WIP, Text)
-handleCode s
-  | isPrefixOf "{-#" s  = (Code, toCode s)
-  | isPrefixOf "---" s  = (Comment, s)
-  | isPrefixOf "---" s  = (CHeader, s)
-  | isPrefixOf "-- |" s = (Haddock, strip "-- |" $ s)
-  | isPrefixOf "--" s   = (Comment, strip "--" $ s)
-  | s == T.empty        = (Code, "")
-  | otherwise           = (Code, "> " `T.append` s)
-
-handleHaddock :: Text -> (WIP, Text)
-handleHaddock s
-  | isPrefixOf "{-#" s  = (Code, T.cons 'n' (toCode s))
-  | isPrefixOf "---" s  = (Haddock, s)
-  | isPrefixOf "-- |" s = (Haddock, strip "-- |" $ s)
-  | isPrefixOf "--" s   = (Haddock, strip "--" $ s)
-  | s == T.empty        = (Code, "")
-  | otherwise           = (Code, T.cons '\n' (toCode s))
-
-handleCHeader :: Text -> (WIP, Text)
-handleCHeader s
-  | isPrefixOf "{-#" s  = (Code, T.cons 'n' (toCode s))
-  | isPrefixOf "---" s  = (CHeader, s)
-  | isPrefixOf "-- |" s = (CHeader, s)
-  | isPrefixOf "--" s   = (CHeader, s)
-  | s == T.empty        = (Code, "")
-  | otherwise           = (Code, T.cons '\n' (toCode s))
-
-lhs :: [Text] -> WIPState
-lhs [] = return []
-lhs (t:ts) = do
-  w <- get
-  let (w', t') = lhsLine w t
-  put w'
-  liftM (t':) (lhs ts)
+lhs :: Current -> [Text] -> [Text]
+lhs _ [] = []
+lhs c (t:ts) = t' : (lhs c' ts)
+  where (c', t') = lhsLine c t
 
 main = do
   text <- T.readFile . head =<< getArgs
   let p = T.lines text
-      q = evalState (lhs p) Code
-  mapM_ T.putStrLn q
+  mapM_ T.putStrLn (lhs Code p)
