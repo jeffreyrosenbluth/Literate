@@ -3,33 +3,24 @@
 module Main where
 
 import            Control.Applicative ((<$>), (<|>))
-import            Data.Maybe          (fromJust, fromMaybe)
+import            Data.Maybe          (fromMaybe)
 import            Data.Text           (Text, stripStart, stripPrefix)
 import qualified  Data.Text           as T
 import qualified  Data.Text.IO        as T
 import            System.Environment
 
-data Current = Comment | Haddock | CHeader | Code
+data Current = Comment | Code
 
 stripPre pre w t = g <$> stripPrefix pre t
   where g x = (w, stripStart x)
 
 lhsLine :: Current -> Text -> (Current, Text)
-lhsLine w t = case w of
-    Code -> handleCode t 
-    _    -> handleComments w t
-
-handleCode :: Text -> (Current, Text)
-handleCode t = fromMaybe d c
+lhsLine w t = fromMaybe d c
   where
-    c = stripPre "---" CHeader t <|> stripPre "-- |" Haddock t <|> stripPre "--" Comment t
-    d = if t == T.empty then (Code, "") else (Code, "> " `T.append` t)
-
-handleComments :: Current ->Text -> (Current, Text)
-handleComments w t = fromMaybe d c
-  where
-    c = stripPre "---" w t <|> stripPre "-- |" w t <|> stripPre "--" w t
-    d = if t == T.empty then (Code, "") else (Code, "\n> " `T.append` t)
+    c = stripPre "---" Comment t <|> stripPre "-- |" Comment t <|> stripPre "--" Comment t
+    d = if t == T.empty then (Code, "") else (Code, s)
+    s = p `T.append` t
+    p = case w of {Comment -> "\n> "; Code -> "> "}
 
 lhs :: Current -> [Text] -> [Text]
 lhs _ [] = []
