@@ -3,7 +3,7 @@
 
 module Main where
 
-import            Control.Applicative ((<$>), (<|>))
+import            Control.Applicative ((<$>))
 import            Data.Maybe          (fromMaybe)
 import            Data.Text           (Text, stripStart, stripPrefix,
                                        isPrefixOf, isSuffixOf)
@@ -24,8 +24,7 @@ lhsLine w t = fromMaybe d c
            | isPrefixOf "{-#" t && isSuffixOf "#-}" t -> (Code, t)
            | otherwise -> (Code, s `T.append` t)
     s = case w of {Comment -> "\n> "; Code -> "> "}
-    c = stripPre "---" Comment t <|> stripPre "-- |" Comment t 
-                                 <|> stripPre "--"   Comment t
+    c = stripPre "--" Comment t
 
 lhs :: Current -> [Text] -> [Text]
 lhs _ [] = []
