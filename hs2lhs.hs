@@ -13,9 +13,9 @@ import            System.Environment
 
 data Current = Comment | Code
 
-stripPre :: Text -> Current -> Text -> Maybe (Current, Text)
-stripPre pre w t = g <$> stripPrefix pre t
-  where g x = (w, stripStart x)
+stripC :: Text -> Text -> Maybe (Current, Text)
+stripC pre t = g <$> stripPrefix pre t
+  where g x = (Comment, stripStart x)
 
 lhsLine :: Current -> Text -> (Current, Text)
 lhsLine w t = fromMaybe d c
@@ -24,7 +24,7 @@ lhsLine w t = fromMaybe d c
            | isPrefixOf "{-#" t && isSuffixOf "#-}" t -> (Code, t)
            | otherwise -> (Code, s `T.append` t)
     s = case w of {Comment -> "\n> "; Code -> "> "}
-    c = stripPre "-- |" Comment t <|> stripPre "--"   Comment t
+    c = stripC "-- |" t <|> stripC "--"  t
 
 lhs :: Current -> [Text] -> [Text]
 lhs _ [] = []
