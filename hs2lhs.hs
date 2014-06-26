@@ -13,10 +13,6 @@ import            System.Environment
 
 data Current = Comment | Code
 
-stripC :: Text -> Text -> Maybe (Current, Text)
-stripC pre t = g <$> stripPrefix pre t
-  where g x = (Comment, stripStart x)
-
 lhsLine :: Current -> Text -> (Current, Text)
 lhsLine w t = fromMaybe d c
   where
@@ -25,6 +21,7 @@ lhsLine w t = fromMaybe d c
            | otherwise -> (Code, s `T.append` t)
     s = case w of {Comment -> "\n> "; Code -> "> "}
     c = stripC "-- |" t <|> stripC "--"  t
+    stripC p t = (\x -> (Comment, stripStart x)) <$> stripPrefix p t
 
 lhs :: Current -> [Text] -> [Text]
 lhs _ [] = []
