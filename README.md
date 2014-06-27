@@ -6,7 +6,7 @@ hs2lhs is a script to convert haskell source files (.hs) to bird style literate 
 
 Usage: 
 ``` bash
-./hs2lhs myprog.hs >> myprog.lhs
+./hs2lhs myprog.hs > myprog.lhs
 ```
 
 Converting hs to lhs requires making some fairly arbitrary decision about how to handle comments.
