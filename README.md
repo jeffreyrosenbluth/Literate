@@ -1,6 +1,6 @@
 Literate
 ========
-hs2hs
+hs2lhs
 -----
 hs2lhs is a script to convert haskell source files (.hs) to bird style literate haskell files (.lhs).
 
